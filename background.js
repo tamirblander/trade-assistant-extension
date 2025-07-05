@@ -1,0 +1,289 @@
+// # Added cooldown system to prevent rapid screenshots
+let lastScreenshotTime = 0;
+const COOLDOWN_DURATION = 30000; // 30 seconds
+
+// # Function to open popup window instead of new tab
+function openPopupWindow() {
+  chrome.windows.create({
+    url: chrome.runtime.getURL("popup.html"),
+    type: "popup",
+    width: 420,
+    height: 650,
+    focused: true
+  });
+}
+
+// # Modified shortcut handler to immediately take screenshot, show gesture, and process in background
+chrome.commands.onCommand.addListener(function(command) {
+  if (command === "open-popup") {
+    // # Check cooldown period
+    const now = Date.now();
+    const timeSinceLastScreenshot = now - lastScreenshotTime;
+    
+    if (timeSinceLastScreenshot < COOLDOWN_DURATION) {
+      const remainingTime = Math.ceil((COOLDOWN_DURATION - timeSinceLastScreenshot) / 1000);
+      chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        if (tabs[0]) {
+          chrome.tabs.sendMessage(tabs[0].id, {
+            type: "SHOW_COOLDOWN_MESSAGE", 
+            remainingTime: remainingTime
+          });
+        }
+      });
+      return;
+    }
+    
+    // # Instead of opening popup immediately, start countdown first
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      if (tabs[0]) {
+        // # Start countdown sequence
+        chrome.tabs.sendMessage(tabs[0].id, {type: "START_COUNTDOWN"}, function(response) {
+          if (chrome.runtime.lastError) {
+            console.log("Content script not ready, proceeding with screenshot");
+            takeScreenshotDirectly(tabs[0].id);
+          }
+        });
+      }
+    });
+  }
+});
+
+// # Function to handle the actual screenshot taking
+function takeScreenshotDirectly(tabId) {
+  lastScreenshotTime = Date.now();
+  
+  // # Show screenshot visual effect
+  chrome.tabs.sendMessage(tabId, {type: "SHOW_SCREENSHOT_EFFECT"}, function(response) {
+    if (chrome.runtime.lastError) {
+      console.log("Content script not ready for screenshot effect");
+    }
+  });
+  
+  // # Take screenshot immediately
+  chrome.tabs.captureVisibleTab(null, {format: 'png'}, function(dataUrl) {
+    if (chrome.runtime.lastError) {
+      console.error('Screenshot failed:', chrome.runtime.lastError);
+      // # If screenshot fails, just open empty popup
+      openPopupWindow();
+    } else {
+      console.log('Screenshot captured via shortcut');
+      
+      // # Update gesture to show processing
+      chrome.tabs.sendMessage(tabId, {type: "SHOW_PROCESSING_GESTURE"}, function(response) {
+        if (chrome.runtime.lastError) {
+          console.log("Content script not ready for processing gesture");
+        }
+      });
+      
+      // # Call OpenAI API in background
+      analyzeScreenshot(dataUrl)
+        .then(analysis => {
+          // # Store result for popup to access
+          chrome.storage.local.set({
+            'lastAnalysis': {
+              dataUrl: dataUrl,
+              analysis: analysis,
+              timestamp: Date.now()
+            }
+          }, function() {
+            // # Hide gesture and open popup with results
+            chrome.tabs.sendMessage(tabId, {type: "HIDE_GESTURE"}, function(response) {
+              if (chrome.runtime.lastError) {
+                console.log("Content script not ready to hide gesture");
+              }
+            });
+            
+            // # Open popup window with results ready
+            openPopupWindow();
+          });
+        })
+        .catch(error => {
+          console.error('OpenAI API Error:', error);
+          // # Store error for popup to show
+          chrome.storage.local.set({
+            'lastAnalysis': {
+              dataUrl: dataUrl,
+              error: error.message,
+              errorType: error.type || 'unknown',
+              timestamp: Date.now()
+            }
+          }, function() {
+            // # Hide gesture and open popup with error
+            chrome.tabs.sendMessage(tabId, {type: "HIDE_GESTURE"}, function(response) {
+              if (chrome.runtime.lastError) {
+                console.log("Content script not ready to hide gesture");
+              }
+            });
+            
+            openPopupWindow();
+          });
+        });
+    }
+  });
+}
+
+// # Handle messages from content script
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+  if (request.action === 'takeScreenshot') {
+    takeScreenshotDirectly(sender.tab.id);
+    sendResponse({success: true});
+  }
+  // # New action to start countdown from popup (same as keyboard shortcut)
+  else if (request.action === 'startCountdown') {
+    // # Check cooldown period (same as keyboard shortcut)
+    const now = Date.now();
+    const timeSinceLastScreenshot = now - lastScreenshotTime;
+    
+    if (timeSinceLastScreenshot < COOLDOWN_DURATION) {
+      const remainingTime = Math.ceil((COOLDOWN_DURATION - timeSinceLastScreenshot) / 1000);
+      chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        if (tabs[0]) {
+          chrome.tabs.sendMessage(tabs[0].id, {
+            type: "SHOW_COOLDOWN_MESSAGE", 
+            remainingTime: remainingTime
+          });
+        }
+      });
+      sendResponse({success: false, error: 'cooldown'});
+      return;
+    }
+    
+    // # Start countdown sequence (same as keyboard shortcut)
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      if (tabs[0]) {
+        chrome.tabs.sendMessage(tabs[0].id, {type: "START_COUNTDOWN"}, function(response) {
+          if (chrome.runtime.lastError) {
+            console.log("Content script not ready, proceeding with screenshot");
+            takeScreenshotDirectly(tabs[0].id);
+          }
+        });
+      }
+    });
+    sendResponse({success: true});
+  }
+  // # Handle messages from popup
+  else if (request.action === 'captureScreenshot') {
+    // # Check cooldown for popup button too
+    const now = Date.now();
+    const timeSinceLastScreenshot = now - lastScreenshotTime;
+    
+    if (timeSinceLastScreenshot < COOLDOWN_DURATION) {
+      const remainingTime = Math.ceil((COOLDOWN_DURATION - timeSinceLastScreenshot) / 1000);
+      sendResponse({
+        success: false, 
+        error: `Please wait ${remainingTime} seconds before taking another screenshot`,
+        errorType: 'cooldown'
+      });
+      return;
+    }
+    
+    lastScreenshotTime = Date.now();
+    
+    chrome.tabs.captureVisibleTab(null, {format: 'png'}, function(dataUrl) {
+      if (chrome.runtime.lastError) {
+        console.error('Screenshot failed:', chrome.runtime.lastError);
+        sendResponse({success: false, error: chrome.runtime.lastError.message});
+      } else {
+        console.log('Screenshot captured successfully');
+        
+        // Call OpenAI API with the screenshot
+        analyzeScreenshot(dataUrl)
+          .then(analysis => {
+            sendResponse({
+              success: true, 
+              dataUrl: dataUrl,
+              analysis: analysis
+            });
+          })
+          .catch(error => {
+            console.error('OpenAI API Error:', error);
+            sendResponse({
+              success: false, 
+              error: `AI Analysis failed: ${error.message}`,
+              errorType: error.type || 'unknown'
+            });
+          });
+      }
+    });
+    return true; // Keep the message channel open for async response
+  }
+});
+
+// Function to analyze screenshot with OpenAI via secure proxy server
+async function analyzeScreenshot(dataUrl) {
+  // # SECURITY: API key is now safely stored on the proxy server
+  // # No more exposed API keys in client-side code!
+  const PROXY_SERVER_URL = 'http://localhost:3001/api/analyze';
+  
+  try {
+    console.log('Sending image to proxy server for secure OpenAI analysis...');
+    
+    // # Call our secure proxy server instead of OpenAI directly
+    const response = await fetch(PROXY_SERVER_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        dataUrl: dataUrl,
+        // # Prompt is now handled by the proxy server with the same trading analysis logic
+      })
+    });
+
+    // # Check if proxy server response is ok
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Proxy Server Error:', response.status, errorData);
+      
+      // # Handle specific proxy server errors
+      if (response.status === 500 && errorData.error?.includes('API key not configured')) {
+        throw new Error('Proxy server configuration error - API key not set');
+      }
+      
+      throw new Error(`Proxy Server Error (${response.status}): ${errorData.error || response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    // # Check for errors from the proxy server
+    if (!data.success) {
+      throw new Error(`Analysis failed: ${data.error || 'Unknown error'}`);
+    }
+
+    if (!data.analysis) {
+      throw new Error('Invalid response format from proxy server');
+    }
+
+    console.log('OpenAI analysis completed successfully via proxy server');
+    return data.analysis;
+
+  } catch (error) {
+    console.error('Proxy server call failed:', error);
+    
+    // # Categorize different types of errors for better user experience
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      error.type = 'network';
+      error.message = 'Cannot connect to proxy server - is it running on port 3001?';
+    } else if (error.message.includes('ECONNREFUSED')) {
+      error.type = 'connection';
+      error.message = 'Proxy server not running - please start the server first';
+    } else if (error.message.includes('API key not configured')) {
+      error.type = 'config';
+      error.message = 'Server configuration error - check API key setup';
+    } else if (error.message.includes('401')) {
+      error.type = 'auth';
+      error.message = 'Authentication failed - check server API key';
+    } else if (error.message.includes('429')) {
+      error.type = 'rate_limit';
+      error.message = 'Rate limit exceeded - too many requests';
+    } else if (error.message.includes('400')) {
+      error.type = 'bad_request';
+      error.message = 'Invalid request - check image format and size';
+    } else if (error.message.includes('500')) {
+      error.type = 'server';
+      error.message = 'Server error - try again later';
+    }
+    
+    throw error;
+  }
+} 

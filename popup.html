@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Trade Assistant</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Material-UI CSS -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      
+      html, body {
+        width: 320px;
+        height: 240px;
+        min-width: 320px;
+        min-height: 240px;
+        max-width: 320px;
+        max-height: 240px;
+        font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: linear-gradient(135deg, #1a0d2e 0%, #2d1b69 50%, #4c1d95 100%);
+        color: white;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        /* Added transition for smooth expansion */
+        transition: all 0.3s ease-in-out;
+      }
+      
+      /* Added expanded state for when showing full analysis */
+      html.expanded, body.expanded {
+        width: 520px;
+        height: 700px;
+        min-width: 520px;
+        min-height: 700px;
+        max-width: 520px;
+        max-height: 700px;
+      }
+      
+      /* Added premium expanded state */
+      html.premium-expanded, body.premium-expanded {
+        width: 720px;
+        height: 900px;
+        min-width: 720px;
+        min-height: 900px;
+        max-width: 720px;
+        max-height: 900px;
+      }
+      
+      .mui-app-bar {
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(20px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        padding: 12px 16px;
+        flex-shrink: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .mui-toolbar {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+      }
+      
+      .mui-typography-h6 {
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: 0.15px;
+        margin: 0;
+      }
+      
+      .mui-typography-subtitle2 {
+        font-size: 9px;
+        font-weight: 500;
+        letter-spacing: 0.1px;
+        text-transform: uppercase;
+        color: #bb86fc;
+        margin: 0;
+      }
+      
+      /* Settings toggle button */
+      .settings-toggle {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 16px;
+        color: white;
+        padding: 6px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+      }
+      
+      .settings-toggle:hover {
+        background: rgba(255, 255, 255, 0.15);
+        transform: rotate(90deg);
+      }
+      
+      .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        padding: 20px;
+      }
+      
+      /* Simple initial view styles */
+      .simple-view {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+      }
+      
+      .simple-view.hidden {
+        display: none;
+      }
+      
+      .main-analyse-btn {
+        background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #c084fc 100%);
+        border: none;
+        border-radius: 12px;
+        color: white;
+        padding: 16px 32px;
+        font-size: 16px;
+        font-weight: 500;
+        font-family: 'Roboto', sans-serif;
+        letter-spacing: 0.46px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.3), 0 2px 4px -1px rgba(124, 58, 237, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 48px;
+      }
+      
+      .main-analyse-btn:hover {
+        background: linear-gradient(135deg, #6d28d9 0%, #9333ea 50%, #a855f7 100%);
+        box-shadow: 0 6px 8px -1px rgba(124, 58, 237, 0.4), 0 4px 6px -1px rgba(124, 58, 237, 0.15);
+        transform: translateY(-2px);
+      }
+      
+      .main-analyse-btn:disabled {
+        background: rgba(255, 255, 255, 0.12);
+        color: rgba(255, 255, 255, 0.3);
+        box-shadow: none;
+        cursor: not-allowed;
+        transform: none;
+      }
+      
+      .premium-btn {
+        background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+        border: none;
+        border-radius: 20px;
+        color: white;
+        padding: 8px 16px;
+        font-size: 11px;
+        font-weight: 500;
+        font-family: 'Roboto', sans-serif;
+        letter-spacing: 0.25px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 2px 4px -1px rgba(245, 158, 11, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        height: 32px;
+      }
+      
+      .premium-btn:hover {
+        background: linear-gradient(135deg, #d97706 0%, #ea580c 100%);
+        box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.3);
+        transform: translateY(-1px);
+      }
+      
+      /* Styles from the original popup for when expanded */
+      .mui-container {
+        flex: 1;
+        padding: 16px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        overflow: hidden;
+        position: relative;
+      }
+      
+      .mui-alert {
+        background: rgba(187, 134, 252, 0.1);
+        border: 1px solid rgba(187, 134, 252, 0.3);
+        border-radius: 8px;
+        padding: 6px 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        font-weight: 400;
+        color: #bb86fc;
+        min-height: 28px;
+        flex-shrink: 0;
+      }
+      
+      .mui-alert.hidden {
+        opacity: 0;
+        visibility: hidden;
+      }
+      
+      .mui-alert-icon {
+        font-size: 14px;
+      }
+      
+      .analysis-grid {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto auto auto 1fr auto;
+        gap: 12px;
+        overflow: hidden;
+      }
+      
+      .analysis-card {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        padding: 12px;
+        backdrop-filter: blur(10px);
+      }
+      
+      .analysis-card.full-width {
+        grid-column: 1 / -1;
+      }
+      
+      .analysis-card.scenarios {
+        grid-column: 1 / -1;
+        grid-row: 4;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        min-height: 200px;
+      }
+      
+      .card-title {
+        font-size: 11px;
+        font-weight: 500;
+        color: #bb86fc;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      
+      .card-title .material-icons {
+        font-size: 14px;
+      }
+      
+      .card-value {
+        font-size: 13px;
+        font-weight: 400;
+        color: rgba(255, 255, 255, 0.87);
+        line-height: 1.3;
+      }
+      
+      .scenarios-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        overflow-y: auto;
+        min-height: 150px;
+        max-height: 300px;
+      }
+      
+      .scenario-item {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 6px;
+        padding: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      
+      .scenario-info {
+        flex: 1;
+      }
+      
+      .scenario-type {
+        font-size: 12px;
+        font-weight: 500;
+        color: #bb86fc;
+        margin-bottom: 2px;
+      }
+      
+      .scenario-description {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.7);
+        line-height: 1.3;
+      }
+      
+      .scenario-probability {
+        background: rgba(187, 134, 252, 0.2);
+        color: #bb86fc;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      
+      .scenarios-container::-webkit-scrollbar {
+        width: 4px;
+      }
+      
+      .scenarios-container::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 2px;
+      }
+      
+      .scenarios-container::-webkit-scrollbar-thumb {
+        background: rgba(187, 134, 252, 0.4);
+        border-radius: 2px;
+      }
+      
+      .empty-state {
+        grid-column: 1 / -1;
+        grid-row: 1 / -1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        gap: 12px;
+        color: rgba(255, 255, 255, 0.5);
+      }
+      
+      .empty-state-icon {
+        font-size: 48px;
+        color: rgba(187, 134, 252, 0.3);
+      }
+      
+      .empty-state-text {
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 1.5;
+      }
+      
+      .mui-bottom-navigation {
+        flex-shrink: 0;
+        padding: 16px 24px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      
+      .mui-chip-container {
+        display: flex;
+        justify-content: space-between;
+        gap: 6px;
+      }
+      
+      .mui-chip {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 12px;
+        padding: 3px 8px;
+        font-size: 9px;
+        font-weight: 500;
+        color: #bb86fc;
+        text-align: center;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+      }
+      
+      .mui-chip-label {
+        font-size: 8px;
+        color: rgba(255, 255, 255, 0.5);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      /* Added styles for the deeper analysis button */
+      .deeper-analysis-btn {
+        position: absolute;
+        bottom: 16px;
+        right: 16px;
+        background: linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #ea580c 100%);
+        border: none;
+        border-radius: 20px;
+        color: white;
+        padding: 8px 16px;
+        font-size: 11px;
+        font-weight: 500;
+        font-family: 'Roboto', sans-serif;
+        letter-spacing: 0.25px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 2px 4px -1px rgba(245, 158, 11, 0.2), 0 4px 6px 0 rgba(245, 158, 11, 0.14), 0 1px 10px 0 rgba(245, 158, 11, 0.12);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        height: 32px;
+        z-index: 1000;
+      }
+      
+      .deeper-analysis-btn:hover {
+        background: linear-gradient(135deg, #d97706 0%, #ea580c 50%, #dc2626 100%);
+        box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.3), 0 6px 8px 0 rgba(245, 158, 11, 0.2), 0 2px 12px 1px rgba(245, 158, 11, 0.15);
+        transform: translateY(-1px);
+      }
+      
+      .deeper-analysis-btn .material-icons {
+        font-size: 14px;
+      }
+
+      /* Loading overlay and premium content styles */
+      .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(26, 13, 46, 0.95);
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        backdrop-filter: blur(10px);
+      }
+      
+      .loading-overlay.show {
+        display: flex;
+      }
+      
+      .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(187, 134, 252, 0.3);
+        border-radius: 50%;
+        border-top-color: #bb86fc;
+        animation: spin 1s ease-in-out infinite;
+        margin-bottom: 16px;
+      }
+      
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      
+      .loading-text {
+        color: #bb86fc;
+        font-size: 14px;
+        font-weight: 500;
+        text-align: center;
+      }
+
+      /* Premium content styles - hidden by default, shown when activated */
+      .expanded-content {
+        display: none;
+      }
+      
+      .expanded-content.show {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+      }
+
+      .premium-content {
+        display: none;
+        grid-column: 1 / -1;
+        grid-row: 1 / -1;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        padding: 20px;
+        backdrop-filter: blur(10px);
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .premium-content.show {
+        display: block;
+      }
+      
+      .premium-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+      
+      .premium-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #f59e0b;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .premium-badge {
+        background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .blurred-content {
+        filter: blur(3px);
+        pointer-events: none;
+        user-select: none;
+      }
+      
+      .premium-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+      
+      .premium-card {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        padding: 16px;
+      }
+      
+      .premium-card-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: #f59e0b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      
+      .premium-card-value {
+        font-size: 14px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.9);
+        line-height: 1.4;
+      }
+      
+      .premium-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(249, 115, 22, 0.1) 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        gap: 16px;
+        border-radius: 8px;
+      }
+      
+      .premium-lock-icon {
+        font-size: 48px;
+        color: #f59e0b;
+        opacity: 0.8;
+      }
+      
+      .premium-message {
+        color: #f59e0b;
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+      
+      .premium-description {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 12px;
+        line-height: 1.4;
+        max-width: 280px;
+      }
+      
+      .upgrade-btn {
+        background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+        border: none;
+        border-radius: 24px;
+        color: white;
+        padding: 12px 24px;
+        font-size: 12px;
+        font-weight: 600;
+        font-family: 'Roboto', sans-serif;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.3);
+        margin-top: 8px;
+      }
+      
+      .upgrade-btn:hover {
+        background: linear-gradient(135deg, #d97706 0%, #ea580c 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 8px -1px rgba(245, 158, 11, 0.4);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Analyzing deeper patterns...</div>
+    </div>
+
+    <!-- App Bar -->
+    <div class="mui-app-bar">
+      <div class="mui-toolbar">
+        <h1 class="mui-typography-h6">Trade Assistant</h1>
+        <p class="mui-typography-subtitle2">AI-Powered Analysis</p>
+      </div>
+      <button class="settings-toggle" id="settingsToggle">
+        <span class="material-icons">settings</span>
+      </button>
+    </div>
+    
+    <!-- Simple Initial View -->
+    <div class="simple-view" id="simpleView">
+      <div class="main-content">
+        <button class="main-analyse-btn" id="mainAnalyseBtn">
+          <span class="material-icons">camera_alt</span>
+          Analyse
+        </button>
+        
+        <button class="premium-btn" id="premiumBtn">
+          <span class="material-icons">auto_awesome</span>
+          Go Premium
+        </button>
+      </div>
+    </div>
+    
+    <!-- Expanded Content (hidden initially) -->
+    <div class="expanded-content" id="expandedContent">
+      <!-- Main Container -->
+      <div class="mui-container">
+        <!-- Status Alert -->
+        <div class="mui-alert hidden" id="statusAlert">
+          <span class="material-icons mui-alert-icon">info</span>
+          <span id="statusText"></span>
+        </div>
+        
+        <!-- Analysis Grid -->
+        <div class="analysis-grid" id="analysisGrid">
+          <div class="empty-state">
+            <span class="material-icons empty-state-icon">trending_up</span>
+            <div class="empty-state-text">
+              Click "Analyse" to capture and analyze any trading chart
+            </div>
+          </div>
+        </div>
+
+        <!-- Premium content section (hidden by default) -->
+        <div class="premium-content" id="premiumContent">
+          <div class="premium-header">
+            <div class="premium-title">
+              <span class="material-icons">auto_awesome</span>
+              Deep Analysis
+            </div>
+            <div class="premium-badge">Premium</div>
+          </div>
+          
+          <div class="blurred-content">
+            <div class="premium-grid">
+              <div class="premium-card">
+                <div class="premium-card-title">
+                  <span class="material-icons">psychology</span>
+                  Market Psychology
+                </div>
+                <div class="premium-card-value">
+                  Fear & Greed Index: 72 (Greed)<br>
+                  Sentiment Score: +0.68<br>
+                  Institutional Flow: Bullish
+                </div>
+              </div>
+              
+              <div class="premium-card">
+                <div class="premium-card-title">
+                  <span class="material-icons">analytics</span>
+                  Advanced Patterns
+                </div>
+                <div class="premium-card-value">
+                  Fibonacci Retracement: 61.8%<br>
+                  Elliott Wave: Wave 3 completion<br>
+                  Harmonic Pattern: Bullish Bat
+                </div>
+              </div>
+              
+              <div class="premium-card">
+                <div class="premium-card-title">
+                  <span class="material-icons">schedule</span>
+                  Time Analysis
+                </div>
+                <div class="premium-card-value">
+                  Optimal Entry: Next 2-4 hours<br>
+                  Exit Window: 3-5 days<br>
+                  Risk Window: Weekly close
+                </div>
+              </div>
+              
+              <div class="premium-card">
+                <div class="premium-card-title">
+                  <span class="material-icons">account_balance</span>
+                  Risk Management
+                </div>
+                <div class="premium-card-value">
+                  Position Size: 2-3% portfolio<br>
+                  Stop Loss: 69,500<br>
+                  Risk/Reward: 1:3.2
+                </div>
+              </div>
+            </div>
+            
+            <div class="premium-card" style="grid-column: 1 / -1;">
+              <div class="premium-card-title">
+                <span class="material-icons">insights</span>
+                AI Confidence Score
+              </div>
+              <div class="premium-card-value">
+                Based on 247 historical patterns, current market conditions show 87% similarity to previous bullish breakouts. 
+                Institutional volume confirms retail FOMO hasn't peaked. Macro indicators suggest continuation for 2-3 weeks.
+                Key resistance break at 110,000 would trigger next leg up to 135,000-145,000 range.
+              </div>
+            </div>
+          </div>
+          
+          <div class="premium-overlay">
+            <span class="material-icons premium-lock-icon">lock</span>
+            <div class="premium-message">Premium Feature</div>
+            <div class="premium-description">
+              Unlock advanced AI analysis with deeper market insights, precise entry/exit timing, and professional-grade risk management tools.
+            </div>
+            <button class="upgrade-btn" onclick="showUpgradeModal()">
+              Upgrade to Premium
+            </button>
+          </div>
+        </div>
+
+        <!-- Deeper analysis button in bottom right corner -->
+        <button class="deeper-analysis-btn" id="deeperAnalysisBtn">
+          <span class="material-icons">auto_awesome</span>
+          Deeper Analysis
+        </button>
+      </div>
+      
+      <!-- Bottom Navigation -->
+      <div class="mui-bottom-navigation">
+        <div class="mui-chip-container">
+          <div class="mui-chip">
+            <div>READY</div>
+            <div class="mui-chip-label">STATUS</div>
+          </div>
+          <div class="mui-chip">
+            <div>AI</div>
+            <div class="mui-chip-label">POWERED</div>
+          </div>
+          <div class="mui-chip">
+            <div>LIVE</div>
+            <div class="mui-chip-label">ANALYSIS</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <script src="popup.js"></script>
+  </body>
+</html> 
