@@ -1,31 +1,18 @@
 {
   "name": "trade-assistant-extension",
   "version": "1.0.0",
-  "description": "A Chrome extension built with Plasmo + React that analyzes stock/crypto charts using OpenAI Vision. Triggered by keyboard shortcut (Ctrl+Shift+Y) or via popup.",
-  "type": "module",
-  "scripts": {
-    "dev": "plasmo dev",
-    "build": "plasmo build",
-    "package": "plasmo package",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "description": "A Chrome extension that analyzes stock/crypto charts using OpenAI Vision. Triggered by keyboard shortcut or via popup.",
+  "author": "",
+  "license": "ISC",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/tamirblander/trade-assistant-extension.git"
   },
-  "keywords": ["chrome-extension", "trading", "openai", "chart-analysis"],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/tamirblander/trade-assistant-extension/issues"
-  },
-  "homepage": "https://github.com/tamirblander/trade-assistant-extension#readme",
-  "devDependencies": {
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "plasmo": "^0.90.5",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "typescript": "^5.0.0"
-  }
+  "keywords": [
+    "chrome-extension",
+    "trading",
+    "openai",
+    "chart-analysis"
+  ],
+  "homepage": "https://github.com/tamirblander/trade-assistant-extension#readme"
 }

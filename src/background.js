@@ -1,3 +1,5 @@
+// # Background Service Worker for Trade Assistant Chrome Extension
+
 // # Added cooldown system to prevent rapid screenshots
 let lastScreenshotTime = 0;
 const COOLDOWN_DURATION = 30000; // 30 seconds
@@ -24,7 +26,7 @@ chrome.commands.onCommand.addListener(function(command) {
       const remainingTime = Math.ceil((COOLDOWN_DURATION - timeSinceLastScreenshot) / 1000);
       chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
         if (tabs[0]) {
-          chrome.tabs.sendMessage(tabs[0].id!, {
+          chrome.tabs.sendMessage(tabs[0].id, {
             type: "SHOW_COOLDOWN_MESSAGE", 
             remainingTime: remainingTime
           });
@@ -37,10 +39,10 @@ chrome.commands.onCommand.addListener(function(command) {
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
       if (tabs[0]) {
         // # Start countdown sequence
-        chrome.tabs.sendMessage(tabs[0].id!, {type: "START_COUNTDOWN"}, function(response) {
+        chrome.tabs.sendMessage(tabs[0].id, {type: "START_COUNTDOWN"}, function(response) {
           if (chrome.runtime.lastError) {
             console.log("Content script not ready, proceeding with screenshot");
-            takeScreenshotDirectly(tabs[0].id!);
+            takeScreenshotDirectly(tabs[0].id);
           }
         });
       }
@@ -49,7 +51,7 @@ chrome.commands.onCommand.addListener(function(command) {
 });
 
 // # Function to handle the actual screenshot taking
-function takeScreenshotDirectly(tabId: number) {
+function takeScreenshotDirectly(tabId) {
   lastScreenshotTime = Date.now();
   
   // # Show screenshot visual effect
@@ -76,7 +78,7 @@ function takeScreenshotDirectly(tabId: number) {
       });
       
       // # Call OpenAI API in background
-      analyzeScreenshot(dataUrl!)
+      analyzeScreenshot(dataUrl)
         .then(analysis => {
           // # Store result for popup to access
           chrome.storage.local.set({
@@ -125,7 +127,7 @@ function takeScreenshotDirectly(tabId: number) {
 // # Handle messages from content script
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   if (request.action === 'takeScreenshot') {
-    takeScreenshotDirectly(sender.tab!.id!);
+    takeScreenshotDirectly(sender.tab.id);
     sendResponse({success: true});
   }
   // # New action to start countdown from popup (same as keyboard shortcut)
@@ -138,7 +140,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
       const remainingTime = Math.ceil((COOLDOWN_DURATION - timeSinceLastScreenshot) / 1000);
       chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
         if (tabs[0]) {
-          chrome.tabs.sendMessage(tabs[0].id!, {
+          chrome.tabs.sendMessage(tabs[0].id, {
             type: "SHOW_COOLDOWN_MESSAGE", 
             remainingTime: remainingTime
           });
@@ -151,10 +153,10 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     // # Start countdown sequence (same as keyboard shortcut)
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
       if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id!, {type: "START_COUNTDOWN"}, function(response) {
+        chrome.tabs.sendMessage(tabs[0].id, {type: "START_COUNTDOWN"}, function(response) {
           if (chrome.runtime.lastError) {
             console.log("Content script not ready, proceeding with screenshot");
-            takeScreenshotDirectly(tabs[0].id!);
+            takeScreenshotDirectly(tabs[0].id);
           }
         });
       }
@@ -187,7 +189,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         console.log('Screenshot captured successfully');
         
         // Call OpenAI API with the screenshot
-        analyzeScreenshot(dataUrl!)
+        analyzeScreenshot(dataUrl)
           .then(analysis => {
             sendResponse({
               success: true, 
@@ -207,13 +209,45 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     });
     return true; // Keep the message channel open for async response
   }
+  // # Handle analysis requests from content script
+  else if (request.action === 'analyzeScreenshot') {
+    analyzeScreenshot(request.dataUrl)
+      .then(analysis => {
+        // # Send result back to content script for display
+        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+          if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+              type: "ANALYSIS_COMPLETE",
+              success: true,
+              analysis: analysis
+            });
+          }
+        });
+        sendResponse({success: true});
+      })
+      .catch(error => {
+        console.error('Analysis Error:', error);
+        // # Send error back to content script for display
+        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+          if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+              type: "ANALYSIS_COMPLETE",
+              success: false,
+              error: error.message
+            });
+          }
+        });
+        sendResponse({success: false, error: error.message});
+      });
+    return true; // Keep the message channel open for async response
+  }
 });
 
 // Function to analyze screenshot with OpenAI via secure proxy server
-async function analyzeScreenshot(dataUrl: string): Promise<string> {
+async function analyzeScreenshot(dataUrl) {
   // # SECURITY: API key is now safely stored on the proxy server
   // # No more exposed API keys in client-side code!
-  const PROXY_SERVER_URL = 'https://proxy-server-kuv4xob9k-tamirs-projects-bf4f71f2.vercel.app/api/analyze';
+  const PROXY_SERVER_URL = 'https://proxy-server-c0vultuzm-tamirs-projects-bf4f71f2.vercel.app/api/analyze';
   
   try {
     console.log('Sending image to proxy server for secure OpenAI analysis...');
@@ -236,7 +270,7 @@ async function analyzeScreenshot(dataUrl: string): Promise<string> {
       console.error('Proxy Server Error:', response.status, errorData);
       
       // # Handle specific proxy server errors
-      if (response.status === 500 && errorData.error?.includes('API key not configured')) {
+      if (response.status === 500 && errorData.error && errorData.error.includes('API key not configured')) {
         throw new Error('Proxy server configuration error - API key not set');
       }
       
@@ -257,7 +291,7 @@ async function analyzeScreenshot(dataUrl: string): Promise<string> {
     console.log('OpenAI analysis completed successfully via proxy server');
     return data.analysis;
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Proxy server call failed:', error);
     
     // # Categorize different types of errors for better user experience
@@ -286,6 +320,4 @@ async function analyzeScreenshot(dataUrl: string): Promise<string> {
     
     throw error;
   }
-}
-
-export {}; 
+} 

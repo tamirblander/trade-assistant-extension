@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trade Assistant</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            width: 380px;
+            height: 150px; /* Shorter popup */
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f8fafc;
+        }
+        
+        .container {
+            padding: 24px;
+            text-align: center;
+        }
+        
+        .main-button {
+            width: 250px; /* Fixed width */
+            padding: 20px;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .main-button:hover {
+            background-color: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button class="main-button" id="analyseChartBtn">
+            Analyse Chart
+        </button>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html> 
