@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Authentication Successful</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f8fafc;
+            text-align: center;
+            color: #1e293b;
+        }
+        .container {
+            padding: 24px;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        p {
+            font-size: 16px;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Authentication Successful!</h1>
+        <p>You are now logged in. This window will close in a moment.</p>
+    </div>
+    <script>
+        // Give the user a moment to see the message before closing.
+        setTimeout(() => {
+            window.close();
+        }, 2000);
+    </script>
+</body>
+</html> 

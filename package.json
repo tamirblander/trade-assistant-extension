@@ -14,5 +14,11 @@
     "openai",
     "chart-analysis"
   ],
-  "homepage": "https://github.com/tamirblander/trade-assistant-extension#readme"
+  "homepage": "https://github.com/tamirblander/trade-assistant-extension#readme",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.52.0"
+  },
+  "devDependencies": {
+    "vite": "^7.0.5"
+  }
 }

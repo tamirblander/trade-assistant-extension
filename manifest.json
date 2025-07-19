@@ -7,7 +7,8 @@
   "permissions": [
     "activeTab",
     "storage",
-    "scripting"
+    "scripting",
+    "identity"
   ],
   
   "background": {
@@ -46,5 +47,19 @@
       },
       "description": "Take screenshot and analyze chart"
     }
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co;"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["*.js", "auth.html"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "externally_connectable": {
+    "matches": [
+      "https://bfgacdniodaemeopkeeokiboichjnddn.chromiumapp.org/*"
+    ]
   }
 } 
