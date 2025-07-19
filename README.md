@@ -1,74 +1,81 @@
 # Trade Assistant Chrome Extension
 
-A Chrome extension built with Plasmo + React that analyzes stock/crypto charts using OpenAI Vision. Triggered by keyboard shortcut (Ctrl+Shift+Y) or via popup.
+A pure Chrome extension that analyzes stock/crypto charts using OpenAI Vision. Triggered by keyboard shortcut (Alt+Shift+A) or via popup.
 
 ## Project Structure
 
-- popup.tsx — React popup UI
-- background.ts — Background service worker (handles shortcut, screenshot)
-- content.ts — Content script (injects overlay, calls OpenAI API)
-- package.json — Manifest config (permissions, commands)
-- assets/icon.png — Extension icon
+```
+├── manifest.json          # Chrome extension manifest
+├── popup.html             # Extension popup UI  
+├── popup.js               # Popup functionality
+├── background.js          # Background service worker
+├── content.js             # Content script for overlays
+├── icon.png               # Extension icon
+├── proxy-server/          # Secure API proxy server
+└── src/                   # Original source files (kept for reference)
+```
 
 ## Setup Instructions
 
-1. **Install dependencies:**
-   ```bash
-   yarn install
-   # or
-   npm install
-   ```
-2. **Set your OpenAI API key:**
-   - Open `content.ts` and replace `YOUR_OPENAI_API_KEY_HERE` with your key.
-   - For production, use Plasmo's secret management and environment variables. See [Plasmo docs](https://docs.plasmo.com/framework/environment-variables/) for details.
-3. **Run in development mode:**
-   ```bash
-   yarn dev
-   # or
-   npm run dev
-   ```
-4. **Load the extension in Chrome:**
-   - Go to `chrome://extensions`, enable Developer Mode.
-   - Click "Load Unpacked" and select `build/chrome-mv3-dev`.
+1. **Configure the API proxy server:**
+   - Navigate to `proxy-server/` directory
+   - Follow the proxy server setup instructions
+   - Deploy to Vercel or your preferred hosting platform
+
+2. **Load the extension in Chrome:**
+   - Go to `chrome://extensions`
+   - Enable "Developer Mode" (top right toggle)
+   - Click "Load unpacked"
+   - Select this project folder (the one containing `manifest.json`)
 
 ## Usage
 
-- Press <kbd>Ctrl+Shift+Y</kbd> (or <kbd>Cmd+Shift+Y</kbd> on Mac) to analyze the current tab's chart.
-- Or open the popup and click "Analyze Current Tab".
-- The analysis will appear as an overlay on the page. If no chart is detected, you'll see a message.
+### Via Keyboard Shortcut:
+- Press **Alt+Shift+A** (or **Option+Shift+A** on Mac)
+- Wait for the countdown and screenshot capture
+- AI analysis will appear as an overlay on the page
+
+### Via Extension Popup:
+- Click the extension icon in Chrome toolbar (📈)
+- Use the "Chart Analysis" button to analyze current tab
+- Configure settings using the collapsible settings panel
+
+## Features
+
+- **Clean Design**: Modern popup interface with trading-focused UI
+- **Keyboard Shortcut**: Quick analysis with Alt+Shift+A
+- **Auto-Analysis**: Configurable automatic chart detection
+- **Settings**: Persistent settings for user preferences
+- **Secure API**: All OpenAI calls go through secure proxy server
+- **Visual Feedback**: Screen overlays and gesture indicators
+
+## Files Overview
+
+### Core Extension Files:
+- **`manifest.json`** - Chrome extension configuration
+- **`popup.html`** - Main popup interface (380x500px)
+- **`popup.js`** - Popup interactions and state management
+- **`background.js`** - Service worker for screenshots and API calls
+- **`content.js`** - Handles page overlays and visual feedback
+
+### Security:
+- No exposed API keys in client code
+- All OpenAI requests go through secure proxy server
+- Minimal permissions (activeTab, storage, tabs)
+
+## Development
+
+This is a pure Chrome extension without build tools:
+
+1. Make changes to any `.js`, `.html`, or `.json` files
+2. Go to `chrome://extensions`
+3. Click the refresh icon on your extension
+4. Test the changes
+
+## Proxy Server
+
+The extension requires the proxy server to be running for AI analysis. See the `proxy-server/` directory for setup instructions.
 
 ---
 
-This is a [Plasmo extension](https://docs.plasmo.com/) project bootstrapped with [`plasmo init`](https://www.npmjs.com/package/plasmo).
-
-## Getting Started
-
-First, run the development server:
-
-```bash
-pnpm dev
-# or
-npm run dev
-```
-
-Open your browser and load the appropriate development build. For example, if you are developing for the chrome browser, using manifest v3, use: `build/chrome-mv3-dev`.
-
-You can start editing the popup by modifying `popup.tsx`. It should auto-update as you make changes. To add an options page, simply add a `options.tsx` file to the root of the project, with a react component default exported. Likewise to add a content page, add a `content.ts` file to the root of the project, importing some module and do some logic, then reload the extension on your browser.
-
-For further guidance, [visit our Documentation](https://docs.plasmo.com/)
-
-## Making production build
-
-Run the following:
-
-```bash
-pnpm build
-# or
-npm run build
-```
-
-This should create a production bundle for your extension, ready to be zipped and published to the stores.
-
-## Submit to the webstores
-
-The easiest way to deploy your Plasmo extension is to use the built-in [bpp](https://bpp.browser.market) GitHub action. Prior to using this action however, make sure to build your extension and upload the first version to the store to establish the basic credentials. Then, simply follow [this setup instruction](https://docs.plasmo.com/framework/workflows/submit) and you should be on your way for automated submission!
+**Note**: This extension has been converted from Plasmo framework to pure Chrome extension for simplicity and reduced complexity. 

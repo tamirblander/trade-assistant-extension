@@ -1,38 +1,46 @@
-const express = require('express');
-const cors = require('cors');
-const fetch = require('node-fetch');
-require('dotenv').config();
+import cors from 'cors';
+import fetch from 'node-fetch';
 
-const app = express();
-const PORT = process.env.PORT || 3001;
+// Helper to run middleware
+const runMiddleware = (req, res, fn) => {
+  return new Promise((resolve, reject) => {
+    fn(req, res, (result) => {
+      if (result instanceof Error) {
+        return reject(result);
+      }
+      return resolve(result);
+    });
+  });
+};
 
-// # Enable CORS for extension requests
-app.use(cors({
-  origin: ['chrome-extension://*', 'moz-extension://*', 'http://localhost:*'],
-  credentials: true
-}));
-
-// # Parse JSON requests
-app.use(express.json({ limit: '50mb' })); // # Increase limit for base64 images
-
-// # Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Trade Assistant Proxy Server is running' });
+const corsMiddleware = cors({
+  origin: ['chrome-extension://*', 'moz-extension://*', /http:\/\/localhost:\d+/],
+  credentials: true,
+  methods: ['POST', 'GET', 'OPTIONS'],
 });
 
-// # Proxy endpoint for OpenAI API
-app.post('/api/analyze', async (req, res) => {
+export default async function handler(req, res) {
   try {
-    console.log('Received analysis request from extension');
+    // Run the CORS middleware
+    await runMiddleware(req, res, corsMiddleware);
+
+    // Handle pre-flight requests for CORS
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
     
-    // # Check if API key is configured
+    if (req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method Not Allowed' });
+    }
+
+    // Check if API key is configured
     if (!process.env.OPENAI_API_KEY) {
       return res.status(500).json({
         error: 'OpenAI API key not configured on server'
       });
     }
 
-    // # Extract request data from extension
+    // Extract request data from extension
     const { dataUrl, prompt } = req.body;
     
     if (!dataUrl) {
@@ -41,7 +49,7 @@ app.post('/api/analyze', async (req, res) => {
       });
     }
 
-    // # Default prompt if not provided
+    // Default prompt if not provided
     const analysisPrompt = prompt || `You are a professional trading analyst. Analyze any financial chart, graph, or trading data visible in this image. Look for candlestick charts, line charts, bar charts, price movements, technical indicators, or any financial data visualization.
 
 If you can see ANY type of financial chart, graph, or trading data (even if it's small or unclear), provide your analysis in this exact JSON format:
@@ -75,9 +83,7 @@ If you can see ANY type of financial chart, graph, or trading data (even if it's
 
 ONLY return {"error": "No Chart Detected"} if there is absolutely NO financial data, charts, graphs, or trading information visible in the image whatsoever.`;
 
-    console.log('Forwarding request to OpenAI API...');
-
-    // # Make request to OpenAI API with server-side API key
+    // Make request to OpenAI API with server-side API key
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -107,7 +113,7 @@ ONLY return {"error": "No Chart Detected"} if there is absolutely NO financial d
       })
     });
 
-    // # Check if OpenAI response is ok
+    // Check if OpenAI response is ok
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       console.error('OpenAI API Error:', response.status, errorData);
@@ -120,9 +126,8 @@ ONLY return {"error": "No Chart Detected"} if there is absolutely NO financial d
 
     const data = await response.json();
     
-    // # Check for API-specific errors
+    // Check for API-specific errors
     if (data.error) {
-      console.error('OpenAI API returned error:', data.error);
       return res.status(400).json({
         error: `OpenAI API Error: ${data.error.message}`,
         type: 'openai_error'
@@ -130,63 +135,24 @@ ONLY return {"error": "No Chart Detected"} if there is absolutely NO financial d
     }
 
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      console.error('Invalid OpenAI response format:', data);
       return res.status(500).json({
         error: 'Invalid response format from OpenAI API',
         type: 'response_format_error'
       });
     }
 
-    console.log('OpenAI analysis completed successfully');
-    
-    // # Return the analysis result to the extension
-    res.json({
+    // Return the analysis result to the extension
+    res.status(200).json({
       success: true,
       analysis: data.choices[0].message.content,
-      usage: data.usage // # Include usage stats if needed
+      usage: data.usage
     });
 
   } catch (error) {
     console.error('Proxy server error:', error);
-    
-    // # Categorize different types of errors
-    let errorType = 'unknown';
-    let errorMessage = error.message;
-    
-    if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      errorType = 'network';
-      errorMessage = 'Network error - check internet connection';
-    } else if (error.message.includes('ENOTFOUND')) {
-      errorType = 'dns';
-      errorMessage = 'DNS resolution failed - check internet connection';
-    }
-    
     res.status(500).json({
-      error: errorMessage,
-      type: errorType
+      error: 'An internal server error occurred.',
+      type: 'unknown'
     });
   }
-});
-
-// # Start the server
-app.listen(PORT, () => {
-  console.log(`🚀 Trade Assistant Proxy Server running on port ${PORT}`);
-  console.log(`📊 Ready to securely proxy OpenAI requests`);
-  console.log(`🔒 API key is safely stored server-side`);
-  
-  if (!process.env.OPENAI_API_KEY) {
-    console.warn('⚠️  WARNING: OPENAI_API_KEY environment variable is not set!');
-    console.log('📝 Please create a .env file with your OpenAI API key');
-  }
-});
-
-// # Graceful shutdown handling
-process.on('SIGINT', () => {
-  console.log('\n🔴 Shutting down Trade Assistant Proxy Server...');
-  process.exit(0);
-});
-
-process.on('SIGTERM', () => {
-  console.log('\n🔴 Shutting down Trade Assistant Proxy Server...');
-  process.exit(0);
-}); 
+} 

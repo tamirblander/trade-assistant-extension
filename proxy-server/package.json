@@ -2,6 +2,7 @@
   "name": "trade-assistant-proxy",
   "version": "1.0.0",
   "description": "Secure proxy server for Trade Assistant extension",
+  "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

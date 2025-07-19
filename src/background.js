@@ -15,21 +15,6 @@ function openPopupWindow() {
   });
 }
 
-// # Function to open the results window
-function openResultsWindow() {
-  chrome.windows.create({
-    url: chrome.runtime.getURL("results.html"),
-    type: "popup",
-    width: 650,
-    height: 550,
-    focused: true
-  });
-}
-
-function isRestrictedUrl(url) {
-  return url.startsWith('chrome://') || url.startsWith('https://chrome.google.com/webstore');
-}
-
 // # Modified shortcut handler to immediately take screenshot, show gesture, and process in background
 chrome.commands.onCommand.addListener(function(command) {
   if (command === "open-popup") {
@@ -67,90 +52,75 @@ chrome.commands.onCommand.addListener(function(command) {
 
 // # Function to handle the actual screenshot taking
 function takeScreenshotDirectly(tabId) {
-  chrome.tabs.get(tabId, (tab) => {
-    if (isRestrictedUrl(tab.url)) {
-      chrome.storage.local.set({
-        'lastAnalysis': {
-          error: "Screenshots are not allowed on this page (e.g., chrome:// pages or the Web Store). Please try on a different page.",
-          errorType: 'restricted_page',
-          timestamp: Date.now()
-        }
-      }, () => {
-        openResultsWindow();
-      });
-      return;
+  lastScreenshotTime = Date.now();
+  
+  // # Show screenshot visual effect
+  chrome.tabs.sendMessage(tabId, {type: "SHOW_SCREENSHOT_EFFECT"}, function(response) {
+    if (chrome.runtime.lastError) {
+      console.log("Content script not ready for screenshot effect");
     }
-
-    lastScreenshotTime = Date.now();
-    
-    // # Show screenshot visual effect
-    chrome.tabs.sendMessage(tabId, {type: "SHOW_SCREENSHOT_EFFECT"}, function(response) {
-      if (chrome.runtime.lastError) {
-        console.log("Content script not ready for screenshot effect");
-      }
-    });
-    
-    // # Take screenshot immediately
-    chrome.tabs.captureVisibleTab(null, {format: 'png'}, function(dataUrl) {
-      if (chrome.runtime.lastError) {
-        console.error('Screenshot failed:', chrome.runtime.lastError);
-        // # If screenshot fails, just open empty popup
-        openPopupWindow();
-      } else {
-        console.log('Screenshot captured via shortcut');
-        
-        // # Update gesture to show processing
-        chrome.tabs.sendMessage(tabId, {type: "SHOW_PROCESSING_GESTURE"}, function(response) {
-          if (chrome.runtime.lastError) {
-            console.log("Content script not ready for processing gesture");
-          }
-        });
-        
-        // # Call OpenAI API in background
-        analyzeScreenshot(dataUrl)
-          .then(analysis => {
-            // # Store result for popup to access
-            chrome.storage.local.set({
-              'lastAnalysis': {
-                dataUrl: dataUrl,
-                analysis: analysis,
-                timestamp: Date.now()
+  });
+  
+  // # Take screenshot immediately
+  chrome.tabs.captureVisibleTab(null, {format: 'png'}, function(dataUrl) {
+    if (chrome.runtime.lastError) {
+      console.error('Screenshot failed:', chrome.runtime.lastError);
+      // # If screenshot fails, just open empty popup
+      openPopupWindow();
+    } else {
+      console.log('Screenshot captured via shortcut');
+      
+      // # Update gesture to show processing
+      chrome.tabs.sendMessage(tabId, {type: "SHOW_PROCESSING_GESTURE"}, function(response) {
+        if (chrome.runtime.lastError) {
+          console.log("Content script not ready for processing gesture");
+        }
+      });
+      
+      // # Call OpenAI API in background
+      analyzeScreenshot(dataUrl)
+        .then(analysis => {
+          // # Store result for popup to access
+          chrome.storage.local.set({
+            'lastAnalysis': {
+              dataUrl: dataUrl,
+              analysis: analysis,
+              timestamp: Date.now()
+            }
+          }, function() {
+            // # Hide gesture and open popup with results
+            chrome.tabs.sendMessage(tabId, {type: "HIDE_GESTURE"}, function(response) {
+              if (chrome.runtime.lastError) {
+                console.log("Content script not ready to hide gesture");
               }
-            }, function() {
-              // # Hide gesture and open popup with results
-              chrome.tabs.sendMessage(tabId, {type: "HIDE_GESTURE"}, function(response) {
-                if (chrome.runtime.lastError) {
-                  console.log("Content script not ready to hide gesture");
-                }
-              });
-              
-              // # Open results window
-              openResultsWindow();
             });
-          })
-          .catch(error => {
-            console.error('OpenAI API Error:', error);
-            // # Store error for popup to show
-            chrome.storage.local.set({
-              'lastAnalysis': {
-                dataUrl: dataUrl,
-                error: error.message,
-                errorType: error.type || 'unknown',
-                timestamp: Date.now()
-              }
-            }, function() {
-              // # Hide gesture and open popup with error
-              chrome.tabs.sendMessage(tabId, {type: "HIDE_GESTURE"}, function(response) {
-                if (chrome.runtime.lastError) {
-                  console.log("Content script not ready to hide gesture");
-                }
-              });
-              
-              openResultsWindow();
-            });
+            
+            // # Open popup window with results ready
+            openPopupWindow();
           });
-      }
-    });
+        })
+        .catch(error => {
+          console.error('OpenAI API Error:', error);
+          // # Store error for popup to show
+          chrome.storage.local.set({
+            'lastAnalysis': {
+              dataUrl: dataUrl,
+              error: error.message,
+              errorType: error.type || 'unknown',
+              timestamp: Date.now()
+            }
+          }, function() {
+            // # Hide gesture and open popup with error
+            chrome.tabs.sendMessage(tabId, {type: "HIDE_GESTURE"}, function(response) {
+              if (chrome.runtime.lastError) {
+                console.log("Content script not ready to hide gesture");
+              }
+            });
+            
+            openPopupWindow();
+          });
+        });
+    }
   });
 }
 
@@ -183,50 +153,15 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     // # Start countdown sequence (same as keyboard shortcut)
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
       if (tabs[0]) {
-        const tabId = tabs[0].id;
-        const tabUrl = tabs[0].url;
-
-        // Check for restricted URLs first
-        if (isRestrictedUrl(tabUrl)) {
-            takeScreenshotDirectly(tabId);
-            sendResponse({ success: true });
-            return;
-        }
-
-        // Try to send a message to the content script.
-        chrome.tabs.sendMessage(tabId, {type: "START_COUNTDOWN"}, function(response) {
-            if (chrome.runtime.lastError) {
-                // If it fails, the content script is likely not injected.
-                console.log("Content script not active, injecting now...");
-
-                // Inject the content script.
-                chrome.scripting.executeScript({
-                    target: { tabId: tabId },
-                    files: ['content.js']
-                }, () => {
-                    if (chrome.runtime.lastError) {
-                        // If injection fails, fall back to direct screenshot.
-                        console.error("Failed to inject content script:", chrome.runtime.lastError.message);
-                        takeScreenshotDirectly(tabId);
-                    } else {
-                        // After injecting, send the message again.
-                        console.log("Content script injected, retrying message...");
-                        chrome.tabs.sendMessage(tabId, {type: "START_COUNTDOWN"}, (response) => {
-                          if(chrome.runtime.lastError) {
-                            console.error("Still failed to connect after injection:", chrome.runtime.lastError.message);
-                            takeScreenshotDirectly(tabId);
-                          }
-                        });
-                    }
-                });
-            } else {
-                console.log("Content script already active, countdown started.");
-            }
+        chrome.tabs.sendMessage(tabs[0].id, {type: "START_COUNTDOWN"}, function(response) {
+          if (chrome.runtime.lastError) {
+            console.log("Content script not ready, proceeding with screenshot");
+            takeScreenshotDirectly(tabs[0].id);
+          }
         });
       }
     });
     sendResponse({success: true});
-    return true; // Keep message channel open for async response
   }
   // # Handle messages from popup
   else if (request.action === 'captureScreenshot') {
@@ -244,15 +179,35 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
       return;
     }
     
-    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-      if (tabs[0]) {
-        takeScreenshotDirectly(tabs[0].id);
-        sendResponse({success: true});
+    lastScreenshotTime = Date.now();
+    
+    chrome.tabs.captureVisibleTab(null, {format: 'png'}, function(dataUrl) {
+      if (chrome.runtime.lastError) {
+        console.error('Screenshot failed:', chrome.runtime.lastError);
+        sendResponse({success: false, error: chrome.runtime.lastError.message});
       } else {
-        sendResponse({success: false, error: "No active tab found."});
+        console.log('Screenshot captured successfully');
+        
+        // Call OpenAI API with the screenshot
+        analyzeScreenshot(dataUrl)
+          .then(analysis => {
+            sendResponse({
+              success: true, 
+              dataUrl: dataUrl,
+              analysis: analysis
+            });
+          })
+          .catch(error => {
+            console.error('OpenAI API Error:', error);
+            sendResponse({
+              success: false, 
+              error: `AI Analysis failed: ${error.message}`,
+              errorType: error.type || 'unknown'
+            });
+          });
       }
     });
-    return true; // Keep message channel open for async response
+    return true; // Keep the message channel open for async response
   }
   // # Handle analysis requests from content script
   else if (request.action === 'analyzeScreenshot') {
@@ -265,9 +220,6 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
               type: "ANALYSIS_COMPLETE",
               success: true,
               analysis: analysis
-            }, () => {
-              // After notifying content script, open the results window
-              openResultsWindow();
             });
           }
         });
@@ -282,9 +234,6 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
               type: "ANALYSIS_COMPLETE",
               success: false,
               error: error.message
-            }, () => {
-                // After notifying content script, open the results window
-                openResultsWindow();
             });
           }
         });

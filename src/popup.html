@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trade Assistant</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            width: 380px;
+            height: 500px;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        
+        .container {
+            width: 380px;
+            height: 500px;
+            background-color: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 12px;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+        
+        .header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo {
+            width: 32px;
+            height: 32px;
+            background-color: #2563eb;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .title {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            color: #1f2937;
+            letter-spacing: -0.5px;
+        }
+        
+        .main-content {
+            padding: 24px;
+        }
+        
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+        
+        .action-button {
+            padding: 20px 12px;
+            background-color: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 500;
+            color: #475569;
+            transition: all 0.2s;
+        }
+        
+        .action-button:hover {
+            background-color: #f1f5f9;
+            border-color: #cbd5e1;
+        }
+        
+        .action-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .settings-section {
+            margin-bottom: 24px;
+        }
+        
+        .settings-header {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0;
+            background-color: transparent;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            color: #374151;
+            cursor: pointer;
+            margin-bottom: 0;
+        }
+        
+        .settings-arrow {
+            transition: transform 0.2s;
+        }
+        
+        .settings-arrow.expanded {
+            transform: rotate(180deg);
+        }
+        
+        .settings-content {
+            display: none;
+            padding-top: 20px;
+        }
+        
+        .settings-content.expanded {
+            display: block;
+        }
+        
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .toggle-text {
+            color: #6b7280;
+            font-size: 14px;
+        }
+        
+        .toggle-switch {
+            width: 44px;
+            height: 24px;
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .toggle-switch.on {
+            background-color: #3b82f6;
+        }
+        
+        .toggle-switch.off {
+            background-color: #d1d5db;
+        }
+        
+        .toggle-knob {
+            width: 20px;
+            height: 20px;
+            background-color: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            transition: left 0.2s;
+        }
+        
+        .toggle-knob.on {
+            left: 22px;
+        }
+        
+        .toggle-knob.off {
+            left: 2px;
+        }
+        
+        .dropdown-section {
+            margin-bottom: 16px;
+        }
+        
+        .dropdown-label {
+            display: block;
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+        
+        .dropdown {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background-color: white;
+            font-size: 14px;
+            color: #374151;
+        }
+        
+        .main-button {
+            width: 100%;
+            padding: 16px;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .main-button:hover {
+            background-color: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <div class="logo">📈</div>
+                <h1 class="title">TRADE ASSISTANT</h1>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="action-button" id="chartAnalysisBtn">
+                    <div class="action-icon">📊</div>
+                    Chart Analysis
+                </button>
+                
+                <button class="action-button" id="recordBtn">
+                    <div class="action-icon">📹</div>
+                    Record
+                </button>
+                
+                <button class="action-button" id="screenshotBtn">
+                    <div class="action-icon">📸</div>
+                    Screenshot
+                </button>
+            </div>
+
+            <!-- Settings Section -->
+            <div class="settings-section">
+                <button class="settings-header" id="settingsToggle">
+                    Settings
+                    <span class="settings-arrow" id="settingsArrow">▼</span>
+                </button>
+
+                <div class="settings-content" id="settingsContent">
+                    <!-- Auto Analyze Toggle -->
+                    <div class="toggle-row">
+                        <div class="toggle-label">
+                            <span style="font-size: 16px;">⭐</span>
+                            <span class="toggle-text">Auto-analyze with AI</span>
+                        </div>
+                        <div class="toggle-switch on" id="autoAnalyzeToggle">
+                            <div class="toggle-knob on" id="autoAnalyzeKnob"></div>
+                        </div>
+                    </div>
+
+                    <!-- Use Case Dropdown -->
+                    <div class="dropdown-section">
+                        <label class="dropdown-label">Use case</label>
+                        <select class="dropdown" id="useCaseSelect">
+                            <option value="Trading">Trading</option>
+                            <option value="Research">Research</option>
+                            <option value="Education">Education</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Action Button -->
+            <button class="main-button" id="loginBtn">
+                Log in to analyze
+            </button>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html> 

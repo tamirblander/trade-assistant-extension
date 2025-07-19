@@ -1,0 +1,18 @@
+{
+  "name": "trade-assistant-extension",
+  "version": "1.0.0",
+  "description": "A Chrome extension that analyzes stock/crypto charts using OpenAI Vision. Triggered by keyboard shortcut or via popup.",
+  "author": "",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tamirblander/trade-assistant-extension.git"
+  },
+  "keywords": [
+    "chrome-extension",
+    "trading",
+    "openai",
+    "chart-analysis"
+  ],
+  "homepage": "https://github.com/tamirblander/trade-assistant-extension#readme"
+}
