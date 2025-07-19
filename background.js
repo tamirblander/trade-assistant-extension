@@ -371,4 +371,78 @@ async function analyzeScreenshot(dataUrl) {
     
     throw error;
   }
-} 
+}
+
+// Supabase Authentication Handlers
+importScripts('supabase.local.js');
+
+const supabaseUrl = 'https://hurfwwefneepldwxfhhm.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1cmZ3d2VmbmVlcGxkd3hmaGhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzkxOTYsImV4cCI6MjA2NzU1NTE5Nn0.nubvnDlqSuEEdjPLzjVeoqug31MBW5_xi4-Ikc_b1bE';
+
+// Initialize Supabase client
+const { createClient } = supabase;
+const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+// Add message listener for authentication
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'getSession') {
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+      sendResponse({ session });
+    }).catch(error => {
+      console.error('Error getting session:', error);
+      sendResponse({ session: null });
+    });
+    return true; // Keep message channel open for async response
+  }
+  
+  if (message.action === 'signIn') {
+    supabaseClient.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: chrome.identity.getRedirectURL("auth.html"),
+      },
+    }).then(({ data, error }) => {
+      if (error) {
+        console.error('Supabase signInWithOAuth error:', error);
+        sendResponse({ error: error.message });
+      } else {
+        sendResponse({ url: data.url });
+      }
+    }).catch(error => {
+      console.error('Sign in error:', error);
+      sendResponse({ error: error.message });
+    });
+    return true; // Keep message channel open for async response
+  }
+  
+  if (message.action === 'setSession') {
+    const { access_token, refresh_token } = message.tokens;
+    supabaseClient.auth.setSession({ access_token, refresh_token }).then(({ error }) => {
+      if (error) {
+        console.error('Supabase setSession error:', error);
+        sendResponse({ success: false, error: error.message });
+      } else {
+        sendResponse({ success: true });
+      }
+    }).catch(error => {
+      console.error('Set session error:', error);
+      sendResponse({ success: false, error: error.message });
+    });
+    return true; // Keep message channel open for async response
+  }
+  
+  if (message.action === 'signOut') {
+    supabaseClient.auth.signOut().then(({ error }) => {
+      if (error) {
+        console.error('Error logging out:', error);
+        sendResponse({ success: false, error: error.message });
+      } else {
+        sendResponse({ success: true });
+      }
+    }).catch(error => {
+      console.error('Sign out error:', error);
+      sendResponse({ success: false, error: error.message });
+    });
+    return true; // Keep message channel open for async response
+  }
+}); 
