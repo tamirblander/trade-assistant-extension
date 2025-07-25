@@ -298,7 +298,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 async function analyzeScreenshot(dataUrl) {
   // # SECURITY: API key is now safely stored on the proxy server
   // # No more exposed API keys in client-side code!
-  const PROXY_SERVER_URL = 'https://proxy-server-c0vultuzm-tamirs-projects-bf4f71f2.vercel.app/api/analyze';
+  const PROXY_SERVER_URL = 'https://proxy-server-o3159uuvx-tamirs-projects-bf4f71f2.vercel.app/api/analyze';
   
   try {
     console.log('Sending image to proxy server for secure OpenAI analysis...');
