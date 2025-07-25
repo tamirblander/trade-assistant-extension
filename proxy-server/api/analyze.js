@@ -50,94 +50,113 @@ export default async function handler(req, res) {
     }
 
     // Default prompt if not provided
-    const analysisPrompt = prompt || `You are a professional trading analyst. Analyze any financial chart, graph, or trading data visible in this image. Look for candlestick charts, line charts, bar charts, price movements, technical indicators, or any financial data visualization.
+    const analysisPrompt = prompt || `You are a professional trading analyst. I need you to analyze ANY image that contains financial data, charts, graphs, or trading information.
 
-If you can see ANY type of financial chart, graph, or trading data (even if it's small or unclear), provide your analysis in this exact JSON format:
+IMPORTANT: You should detect charts even if they are:
+- Small or unclear
+- Part of a larger webpage or screenshot
+- Mixed with other content
+- Any type of financial visualization (candlesticks, line charts, bar charts, etc.)
+- Stock prices, crypto prices, forex charts
+- Trading platforms, brokers, financial websites
+- Even basic price movements or numbers
+
+If you see ANYTHING that could be financial data (prices, charts, graphs, trading interface, numbers that look like stock/crypto prices), analyze it!
+
+Return your analysis in this EXACT JSON format (no extra text before or after):
 
 {
   "summary": {
     "trend": "Bullish/Bearish/Neutral",
-    "rsi": "Overbought/Oversold/Neutral",
-    "stop": 0.00,
-    "target": 0.00,
-    "riskReward": "1:X.X",
-    "confidence": 85,
-    "currentPrice": 0.00,
-    "timeFrame": "1H/4H/1D/1W/etc"
+    "rsi": "Overbought/Oversold/Neutral/Not visible",
+    "stop": 100.00,
+    "target": 120.00,
+    "riskReward": "1:2.0",
+    "confidence": 75,
+    "currentPrice": 110.00,
+    "timeFrame": "1H/4H/1D/1W/Not visible"
   },
   "patterns": [
     {
-      "label": "Pattern Name",
-      "type": "support/resistance/pattern/indicator",
-      "color": "green/red/blue/yellow/purple/orange",
-      "strength": "Strong/Moderate/Weak"
+      "label": "Support Level",
+      "type": "support",
+      "color": "blue",
+      "strength": "Strong"
+    },
+    {
+      "label": "Resistance at 120",
+      "type": "resistance", 
+      "color": "red",
+      "strength": "Moderate"
     }
   ],
   "insights": [
     {
-      "type": "bullish/bearish/neutral/warning",
-      "text": "Key insight about the chart"
+      "type": "bullish",
+      "text": "Price is holding above key support level"
+    },
+    {
+      "type": "neutral",
+      "text": "Volume appears average for this timeframe"
     }
   ],
   "recommendation": {
-    "action": "Buy/Sell/Hold/Wait",
-    "entry": 0.00,
-    "stopLoss": 0.00,
-    "takeProfit": 0.00,
-    "conditions": "Specific conditions for entry (e.g., 'Buy above 182.4 only if volume increases')",
-    "timeHorizon": "Short-term/Medium-term/Long-term"
+    "action": "Buy",
+    "entry": 110.50,
+    "stopLoss": 105.00,
+    "takeProfit": 125.00,
+    "conditions": "Enter on breakout above current resistance with volume confirmation",
+    "timeHorizon": "Short-term"
   },
   "forecast": {
     "scenarios": [
       {
         "type": "Most likely scenario",
-        "probability": "65%",
-        "target": 0.00,
-        "timeframe": "X days/weeks",
-        "description": "Detailed description"
+        "probability": "60%",
+        "target": 125.00,
+        "timeframe": "5-7 days",
+        "description": "Continuation of current trend with breakout above resistance"
       },
       {
-        "type": "Alternative scenario", 
-        "probability": "25%",
-        "target": 0.00,
-        "timeframe": "X days/weeks",
-        "description": "Detailed description"
+        "type": "Alternative scenario",
+        "probability": "30%",
+        "target": 105.00,
+        "timeframe": "3-5 days", 
+        "description": "Pullback to support level for retest"
       },
       {
         "type": "Less likely scenario",
-        "probability": "10%", 
-        "target": 0.00,
-        "timeframe": "X days/weeks",
-        "description": "Detailed description"
+        "probability": "10%",
+        "target": 95.00,
+        "timeframe": "1-2 weeks",
+        "description": "Break below support leading to further decline"
       }
     ]
   },
   "technicalData": {
-    "volume": "High/Normal/Low or specific analysis",
-    "volatility": "High/Normal/Low",
-    "momentum": "Strong/Moderate/Weak",
+    "volume": "Normal trading volume observed",
+    "volatility": "Moderate price swings",
+    "momentum": "Moderate bullish momentum",
     "keyLevels": {
-      "resistance": [0.00, 0.00],
-      "support": [0.00, 0.00]
+      "resistance": [120.00, 125.00],
+      "support": [105.00, 100.00]
     }
   },
   "timing": {
-    "status": "Immediate entry/Wait for pullback/Watch for confirmation/etc",
-    "urgency": "High/Medium/Low"
+    "status": "Watch for breakout confirmation above 120",
+    "urgency": "Medium"
   }
 }
 
-Instructions:
-- Fill all numeric values with actual price levels from the chart
-- Use realistic percentages for probabilities (must add up to 100%)
-- Choose appropriate colors: green for bullish, red for bearish, blue for neutral, yellow for caution, purple for volume, orange for breakout
-- Be specific with entry conditions and timing
-- Include 5-7 key patterns/indicators you observe
-- Provide 3-4 actionable insights
-- Make recommendations specific and actionable
-- Ensure all scenarios are realistic and add up to 100% probability
+CRITICAL INSTRUCTIONS:
+1. Use realistic price values based on what you see in the image
+2. If you can't see specific indicators, make reasonable assumptions based on price action
+3. Always provide numerical values - never use 0.00 or leave blank
+4. Probabilities in forecast must add up to 100%
+5. Be creative but realistic with your analysis
+6. If the image shows ANY financial data whatsoever, provide a full analysis
 
-ONLY return {"error": "No Chart Detected"} if there is absolutely NO financial data, charts, graphs, or trading information visible in the image whatsoever.`;
+Only return {"error": "No Chart Detected"} if the image contains absolutely NO financial information, numbers, charts, or trading data of any kind.`;
 
     // Make request to OpenAI API with server-side API key
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
