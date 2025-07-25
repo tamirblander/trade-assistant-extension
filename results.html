@@ -1,35 +1,434 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Analysis Results</title>
+    <title>AI Chart Analysis</title>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: sans-serif;
-            padding: 20px;
-            background-color: #f0f2f5;
-            width: 600px; /* Set a width for the results window */
-            height: 400px; /* Set a height */
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #000000;
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
         }
-        h1 {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 16px;
+            min-height: 100vh;
         }
-        #results-container {
-            background-color: white;
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #1f2937;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-icon {
+            width: 24px;
+            height: 24px;
+            background-color: #1f2937;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #e5e7eb;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background-color: #10b981;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Summary Grid */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .summary-card {
+            background-color: #111827;
+            border: 1px solid #1f2937;
             border-radius: 8px;
-            padding: 20px;
-            white-space: pre-wrap; /* Keep formatting from JSON */
-            font-family: monospace;
-            border: 1px solid #e1e5e9;
-            height: 80%;
-            overflow-y: auto;
+            padding: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .summary-label {
+            font-size: 11px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .summary-value {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .summary-icon {
+            width: 12px;
+            height: 12px;
+            flex-shrink: 0;
+        }
+
+        /* Trend Colors */
+        .trend-bullish { color: #10b981; }
+        .trend-bearish { color: #ef4444; }
+        .trend-neutral { color: #6b7280; }
+
+        /* Other Colors */
+        .color-blue { color: #3b82f6; }
+        .color-red { color: #ef4444; }
+        .color-green { color: #10b981; }
+        .color-purple { color: #8b5cf6; }
+        .color-orange { color: #f59e0b; }
+        .color-yellow { color: #eab308; }
+
+        /* Timing Alert */
+        .timing-alert {
+            background-color: #111827;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .timing-icon {
+            width: 16px;
+            height: 16px;
+            color: #eab308;
+        }
+
+        .timing-text {
+            font-size: 14px;
+            font-weight: 500;
+            color: #e5e7eb;
+        }
+
+        /* Main Content Grid */
+        .main-grid {
+            display: grid;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        @media (min-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (min-width: 1024px) and (min-height: 600px) {
+            .main-grid {
+                grid-template-columns: 2fr 1fr;
+            }
+            .screenshot-container {
+                display: block !important;
+            }
+        }
+
+        /* Section Cards */
+        .section-card {
+            background-color: #111827;
+            border: 1px solid #1f2937;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e5e7eb;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-icon {
+            width: 16px;
+            height: 16px;
+            color: #6b7280;
+        }
+
+        /* Patterns Grid */
+        .patterns-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 8px;
+        }
+
+        .pattern-item {
+            background-color: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 6px;
+            padding: 10px;
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+
+        .pattern-item:hover {
+            background-color: #2d3748;
+        }
+
+        .pattern-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pattern-icon {
+            width: 12px;
+            height: 12px;
+            flex-shrink: 0;
+        }
+
+        .pattern-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #e5e7eb;
+        }
+
+        /* Insights List */
+        .insights-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .insight-item {
+            background-color: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        .insight-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .insight-icon {
+            width: 12px;
+            height: 12px;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        .insight-text {
+            font-size: 12px;
+            color: #e5e7eb;
+            line-height: 1.4;
+        }
+
+        /* Recommendation Section */
+        .recommendation-section {
+            background-color: #111827;
+            border: 1px solid #1f2937;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .recommendation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .recommendation-item {
+            text-align: center;
+        }
+
+        .recommendation-label {
+            font-size: 11px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .recommendation-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e5e7eb;
+        }
+
+        .recommendation-conditions {
+            margin-top: 12px;
+            padding: 12px;
+            background-color: #1f2937;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #e5e7eb;
+            line-height: 1.4;
+        }
+
+        /* Forecast Section */
+        .forecast-section {
+            background-color: #111827;
+            border: 1px solid #1f2937;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .forecast-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .forecast-item {
+            background-color: #1f2937;
+            border-radius: 6px;
+            padding: 12px;
+        }
+
+        .forecast-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .forecast-type {
+            font-size: 12px;
+            font-weight: 600;
+            color: #e5e7eb;
+        }
+
+        .forecast-probability {
+            font-size: 12px;
+            font-weight: 600;
+            color: #10b981;
+        }
+
+        .forecast-description {
+            font-size: 11px;
+            color: #9ca3af;
+            line-height: 1.4;
+        }
+
+        /* Screenshot Container */
+        .screenshot-container {
+            display: none;
+            background-color: #111827;
+            border: 1px solid #1f2937;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .screenshot-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 6px;
+            border: 1px solid #374151;
+        }
+
+        /* Loading and Error States */
+        .loading, .error {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+            text-align: center;
+            color: #6b7280;
+        }
+
+        .error {
+            color: #ef4444;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #1f2937;
+        }
+
+        .footer-text {
+            font-size: 11px;
+            color: #4b5563;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+            .container {
+                padding: 12px;
+            }
+            
+            .summary-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .patterns-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Chart Analysis</h1>
-    <div id="results-container">
-        <p>Loading analysis...</p>
+    <div class="container">
+        <div id="app-content">
+            <div class="loading">
+                <div>Loading analysis...</div>
+            </div>
+        </div>
     </div>
     <script src="results.js"></script>
 </body>
