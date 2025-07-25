@@ -49,7 +49,7 @@
     }
   },
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://proxy-server-c0vultuzm-tamirs-projects-bf4f71f2.vercel.app;"
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://proxy-server-o3159uuvx-tamirs-projects-bf4f71f2.vercel.app;"
   },
   "web_accessible_resources": [
     {
