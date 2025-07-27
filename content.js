@@ -141,21 +141,20 @@ if (typeof window.tradeAssistantContentScriptInjected === 'undefined') {
           countdownOverlay.querySelector('.countdown-number').style.animation = 'countdownPulse 1s ease-in-out';
         } else {
           clearInterval(countdownInterval);
-          countdownOverlay.querySelector('.countdown-number').textContent = 'SNAP!';
-          countdownOverlay.querySelector('.countdown-text').textContent = '📷 Taking screenshot...';
           
-          // # Wait a moment then take screenshot
+          // # Immediately remove overlay and take screenshot
+          countdownOverlay.remove();
+          countdownOverlay = null;
+          
+          // # Wait a moment for overlay to be completely removed before taking screenshot
           setTimeout(() => {
-            countdownOverlay.remove();
-            countdownOverlay = null;
-            
             // # Notify background script to take screenshot
             chrome.runtime.sendMessage({action: 'takeScreenshot'}, function(response) {
               if (chrome.runtime.lastError) {
                 console.log("Background script not ready:", chrome.runtime.lastError.message);
               }
             });
-          }, 500);
+          }, 300);
         }
       }, 1000);
     }

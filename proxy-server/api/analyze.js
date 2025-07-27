@@ -184,7 +184,7 @@ Only return {"error": "No Chart Detected"} if the image contains absolutely NO f
             ]
           }
         ],
-        max_tokens: 500
+        max_tokens: 1500
       })
     });
 
